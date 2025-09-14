@@ -39,14 +39,20 @@ for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER, STATIC_IMAGES_FOLDER]:
         logger.error(f"Error creating directory {folder}: {e}")
 
 # Load YOLO model
+model = None
 try:
-    # Force CPU usage for Render deployment to avoid memory issues
-    device = 'cpu'  # Always use CPU for Render deployment
+    logger.info("Starting model loading...")
+    # Force CPU usage for local testing
+    device = 'cpu'
+    logger.info(f"Loading YOLOv8n model on {device}...")
     model = YOLO('yolov8n.pt')  # Load YOLOv8n model (nano - much smaller)
+    logger.info("Model loaded, moving to device...")
     model.to(device)
     logger.info(f"Model loaded successfully on {device}")
 except Exception as e:
     logger.error(f"Error loading model: {e}")
+    import traceback
+    logger.error(f"Model loading traceback: {traceback.format_exc()}")
     model = None  # Handle this case in your detection function
 
 # Configuration for detection
@@ -94,19 +100,29 @@ def upload_file():
             logger.info(f"File saved to: {file_path}")
             
             # Verify file exists and has content
-            if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-                raise ValueError("File upload failed or file is empty")
+            if not os.path.exists(file_path):
+                raise ValueError(f"File upload failed - file does not exist at {file_path}")
+            
+            file_size = os.path.getsize(file_path)
+            if file_size == 0:
+                raise ValueError("File upload failed - file is empty")
+            
+            logger.info(f"File size: {file_size} bytes")
             
             # Try to open the image to verify it's valid
             img = cv2.imread(file_path)
             if img is None:
-                raise ValueError("Could not open image file - possibly corrupted or unsupported format")
+                raise ValueError(f"Could not open image file - possibly corrupted or unsupported format. File size: {file_size} bytes")
+            
+            logger.info(f"Image loaded successfully: {img.shape}")
             
             # Perform object detection
             output_image_path, explanations = detect_objects(file_path)
             
             # Get just the filename from the path
             output_filename = os.path.basename(output_image_path)
+            
+            logger.info(f"Detection completed. Found {len(explanations)} objects")
 
             # Return the detected objects and output image URL
             return jsonify({
