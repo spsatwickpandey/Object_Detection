@@ -65,26 +65,42 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    logger.info(f"Upload request received. Files: {list(request.files.keys())}")
+    
     if 'file' not in request.files:
+        logger.error("No file part in request")
         return jsonify({"error": "No file part"}), 400
     
     file = request.files['file']
+    logger.info(f"File received: {file.filename}, content type: {file.content_type}")
+    
     if file.filename == '':
+        logger.error("No file selected")
         return jsonify({"error": "No selected file"}), 400
     
     if not allowed_file(file.filename):
         return jsonify({"error": "File type not allowed"}), 400
     
     if file:
+        file_path = None
         try:
-            filename = secure_filename(file.filename)
+            # Create unique timestamp-based filename
+            timestamp = str(int(time() * 1000))
+            filename = f"frame_{timestamp}.jpg"
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
             
-            # Verify the image can be opened
+            # Save the file
+            file.save(file_path)
+            logger.info(f"File saved to: {file_path}")
+            
+            # Verify file exists and has content
+            if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+                raise ValueError("File upload failed or file is empty")
+            
+            # Try to open the image to verify it's valid
             img = cv2.imread(file_path)
             if img is None:
-                raise ValueError("Could not open image file")
+                raise ValueError("Could not open image file - possibly corrupted")
             
             # Perform object detection
             output_image_path, explanations = detect_objects(file_path)
@@ -100,23 +116,31 @@ def upload_file():
             })
         except Exception as e:
             logger.error(f"Error processing file: {e}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "Processing failed"}), 500
         finally:
             # Clean up uploaded file
-            try:
-                os.remove(file_path)
-            except:
-                pass
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    logger.info(f"Cleaned up file: {file_path}")
+                except Exception as cleanup_error:
+                    logger.error(f"Error cleaning up file {file_path}: {cleanup_error}")
 
 def detect_objects(image_path):
     if model is None:
         raise Exception("Model not properly loaded")
+    
+    if not os.path.exists(image_path):
+        raise Exception(f"Image file does not exist: {image_path}")
+    
     try:
+        # Read the image first to ensure it's valid
+        image = cv2.imread(image_path)
+        if image is None:
+            raise Exception("Could not read image file")
+        
         # Perform prediction with memory optimization
         results = model(image_path, conf=CONFIDENCE_THRESHOLD, iou=IOU_THRESHOLD, verbose=False)[0]
-        
-        # Get the original image for drawing
-        image = cv2.imread(image_path)
         
         explanations = []
         
@@ -147,7 +171,7 @@ def detect_objects(image_path):
         # Clean up old output files before saving new one
         cleanup_output_files()
         
-        # Generate unique filename with timestamp and random component
+        # Generate unique filename with timestamp
         timestamp = int(time() * 1000)  # millisecond precision
         output_filename = f'output_{timestamp}.jpg'
         output_image_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
