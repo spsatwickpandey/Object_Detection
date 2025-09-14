@@ -4,6 +4,11 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn wsgi:app
+    plan: starter
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0 
+        value: 3.10.0
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: false 
