@@ -278,113 +278,109 @@
                 Object Detection AI
             </h1>
 
-            <!-- Live Camera Detection Section -->
-            <div class="bg-black/20 rounded-lg p-4 sm:p-6 mb-6">
-                <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
-                    <i class="fas fa-video"></i> Live Camera Detection
-                </h2>
-                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <button id="startCameraBtn" class="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center gap-2">
-                            <i class="fas fa-play"></i>
-                            Start Camera
-                        </button>
-                        <button id="stopCameraBtn" class="px-6 py-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center gap-2" style="display:none">
-                            <i class="fas fa-stop"></i>
-                            Stop Camera
-                        </button>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="flex items-center gap-2 text-white">
-                            <input type="checkbox" id="detectionToggle" class="rounded">
-                            <span class="text-sm">Real-time Detection</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="mt-4 rounded-lg overflow-hidden bg-black/10">
-                    <video id="videoElement" autoplay muted playsinline class="w-full h-auto max-h-[400px] object-cover" style="display:none"></video>
-                    <canvas id="canvasElement" class="w-full h-auto max-h-[400px] object-cover" style="display:none"></canvas>
-                    <div id="cameraPrompt" class="text-gray-400 text-center p-8">
-                        <i class="fas fa-camera text-4xl mb-2"></i>
-                        <p>Click "Start Camera" to begin live object detection</p>
-                        <p class="text-xs text-gray-500 mt-1">Camera permission will be requested</p>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Main Content Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <!-- Left Column: Camera, Live Detection, Unique Objects -->
-                <div class="flex flex-col gap-6">
-                    <!-- Live Detection Section -->
-                    <div class="result-card bg-black/20 rounded-lg p-4 sm:p-6">
+            <!-- Dashboard Grid Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column: Camera Feed -->
+                <div class="lg:col-span-2">
+                    <div class="bg-black/20 rounded-lg p-4 sm:p-6">
                         <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
-                            <i class="fas fa-eye"></i> Live Detection
+                            <i class="fas fa-video"></i> Live Camera Feed
                             <div id="detectionIndicator" class="w-3 h-3 rounded-full bg-gray-500 ml-auto"></div>
                         </h2>
-                        <div class="rounded-lg overflow-hidden flex items-center justify-center bg-black/10 relative min-h-[250px] sm:min-h-[300px]">
-                            <div id="detectionContainer" class="relative w-full h-full flex items-center justify-center">
-                                <div class="text-gray-400 text-center p-8" id="detectionPrompt">
-                                    <i class="fas fa-search text-4xl mb-2"></i>
-                                    <p>Start camera to see live detections</p>
-                                    <p class="text-xs text-gray-500 mt-1">Objects will be outlined in real-time</p>
+                        <div class="rounded-lg overflow-hidden bg-black/10 relative">
+                            <video id="videoElement" autoplay muted playsinline class="w-full h-auto max-h-[500px] object-cover" style="display:none"></video>
+                            <canvas id="canvasElement" class="w-full h-auto max-h-[500px] object-cover" style="display:none"></canvas>
+                            <div id="cameraPrompt" class="text-gray-400 text-center p-8 min-h-[400px] flex flex-col items-center justify-center">
+                                <i class="fas fa-camera text-6xl mb-4 text-purple-400"></i>
+                                <p class="text-lg mb-2">Ready for Live Detection</p>
+                                <p class="text-sm text-gray-500">Click "Start Camera" to begin real-time object detection</p>
+                            </div>
+                        </div>
+                    </div>
                                 </div>
-                                <canvas id="detectionCanvas" class="w-full h-full object-cover" style="display:none"></canvas>
+
+                <!-- Right Column: Detection Controls & Stats -->
+                <div class="space-y-6">
+                    <!-- Detection Controls -->
+                    <div class="bg-black/20 rounded-lg p-4 sm:p-6">
+                        <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
+                            <i class="fas fa-cogs"></i> Controls
+                        </h2>
+                        <div class="space-y-4">
+                            <button id="startCameraBtn" class="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2">
+                                <i class="fas fa-play"></i>
+                                Start Camera
+                            </button>
+                            <button id="stopCameraBtn" class="w-full px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2" style="display:none">
+                                <i class="fas fa-stop"></i>
+                                Stop Camera
+                                </button>
+                            <div class="flex items-center justify-between bg-black/30 p-3 rounded-lg">
+                                <span class="text-white font-medium">Real-time Detection</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="detectionToggle" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Unique Objects Section -->
-                    <div class="result-card bg-black/20 rounded-lg p-4 sm:p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-xl sm:text-2xl font-semibold text-blue-300 flex items-center gap-2">
-                                <i class="fas fa-history"></i> Unique Objects History
-                            </h2>
-                            <button id="clearHistoryBtn" class="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1" onclick="clearUniqueObjectsHistory()">
-                                <i class="fas fa-trash"></i>
-                                Clear
-                            </button>
-                        </div>
-                        <div id="uniqueObjects" class="space-y-2 max-h-[200px] sm:max-h-[250px] overflow-y-auto custom-scrollbar">
-                            <div class="text-gray-400 text-center p-4 rounded-lg bg-black/20">
-                                <i class="fas fa-search text-2xl mb-2 text-gray-500"></i>
-                                <p>No unique objects detected yet</p>
-                                <p class="text-xs text-gray-500 mt-1">Objects will appear here with timestamps</p>
+                    <!-- Detection Stats -->
+                    <div class="bg-black/20 rounded-lg p-4 sm:p-6">
+                        <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
+                            <i class="fas fa-chart-bar"></i> Detection Stats
+                        </h2>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center bg-black/30 p-3 rounded-lg">
+                                <span class="text-gray-300">Objects Detected</span>
+                                <span id="detectionCount" class="text-white font-bold text-lg">0</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-black/30 p-3 rounded-lg">
+                                <span class="text-gray-300">Unique Objects</span>
+                                <span id="uniqueCount" class="text-white font-bold text-lg">0</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-black/30 p-3 rounded-lg">
+                                <span class="text-gray-300">Detection Status</span>
+                                <span id="detectionStatus" class="text-yellow-400 font-medium">Idle</span>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Current Detections -->
-                <div class="result-card bg-black/20 rounded-lg p-4 sm:p-6 h-full flex flex-col">
+            <!-- Bottom Row: Detection Results -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <!-- Current Detections -->
+                <div class="bg-black/20 rounded-lg p-4 sm:p-6">
                     <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
                         <i class="fas fa-list-ul"></i> Current Detections
                     </h2>
-                    <div class="flex flex-col gap-4 flex-1">
-                        <!-- Live Objects Section -->
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-blue-300 mb-3 flex items-center gap-2">
-                                <i class="fas fa-eye"></i> Live Objects
-                            </h3>
-                            <ul id="detections" class="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar"></ul>
+                    <ul id="detections" class="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <div class="text-gray-400 text-center p-8 rounded-lg bg-black/20">
+                            <i class="fas fa-search text-4xl mb-4 text-gray-500"></i>
+                            <p class="text-lg">No objects detected</p>
+                            <p class="text-sm text-gray-500 mt-2">Start camera and enable detection to see results</p>
                         </div>
-                        
-                        <!-- Unique Objects History Section -->
-                        <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-green-300 mb-3 flex items-center gap-2">
-                                <i class="fas fa-history"></i> Unique Objects History
-                            </h3>
-                            <div id="uniqueObjectsHistory" class="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
-                                <div class="text-gray-400 text-center p-4 rounded-lg bg-black/20">
-                                    <i class="fas fa-search text-xl mb-2 text-gray-500"></i>
-                                    <p class="text-sm">No unique objects detected yet</p>
-                                    <p class="text-xs text-gray-500 mt-1">Objects will appear here with timestamps</p>
-                                </div>
+                    </ul>
                             </div>
-                            <button id="clearHistoryBtn" class="mt-2 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1" onclick="clearUniqueObjectsHistory()">
-                                <i class="fas fa-trash"></i>
-                                Clear History
-                            </button>
+
+                <!-- Unique Objects History -->
+                <div class="bg-black/20 rounded-lg p-4 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl sm:text-2xl font-semibold text-blue-300 flex items-center gap-2">
+                            <i class="fas fa-history"></i> Unique Objects History
+                        </h2>
+                        <button id="clearHistoryBtn" class="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1" onclick="clearUniqueObjectsHistory()">
+                            <i class="fas fa-trash"></i>
+                            Clear
+                        </button>
+                            </div>
+                    <div id="uniqueObjects" class="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                        <div class="text-gray-400 text-center p-8 rounded-lg bg-black/20">
+                            <i class="fas fa-search text-4xl mb-4 text-gray-500"></i>
+                            <p class="text-lg">No unique objects detected yet</p>
+                            <p class="text-sm text-gray-500 mt-2">Objects will appear here with timestamps</p>
                         </div>
                     </div>
                 </div>
@@ -419,11 +415,12 @@
         const stopCameraBtn = document.getElementById('stopCameraBtn');
         const detectionToggle = document.getElementById('detectionToggle');
         const cameraPrompt = document.getElementById('cameraPrompt');
-        const detectionPrompt = document.getElementById('detectionPrompt');
         const detectionIndicator = document.getElementById('detectionIndicator');
         const detectionsList = document.getElementById('detections');
         const uniqueObjectsContainer = document.getElementById('uniqueObjects');
-        const uniqueObjectsHistoryContainer = document.getElementById('uniqueObjectsHistory');
+        const detectionCount = document.getElementById('detectionCount');
+        const uniqueCount = document.getElementById('uniqueCount');
+        const detectionStatus = document.getElementById('detectionStatus');
 
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
@@ -514,10 +511,14 @@
             
             isDetecting = true;
             detectionIndicator.className = 'w-3 h-3 rounded-full bg-green-500 ml-auto animate-pulse';
-            detectionPrompt.style.display = 'none';
             
             // Start processing frames
             detectionInterval = setInterval(processFrame, 100); // Process every 100ms
+            
+            // Update status
+            detectionStatus.textContent = 'Active';
+            detectionStatus.className = 'text-green-400 font-medium';
+            
             console.log('Detection started');
         }
 
@@ -529,11 +530,15 @@
             }
             
             detectionIndicator.className = 'w-3 h-3 rounded-full bg-gray-500 ml-auto';
-            detectionPrompt.style.display = 'block';
+            
+            // Update status
+            detectionStatus.textContent = 'Idle';
+            detectionStatus.className = 'text-yellow-400 font-medium';
             
             // Clear current detections but preserve unique history
             currentDetections = [];
             updateDetections([]);
+            updateStats();
             
             console.log('Detection stopped');
         }
@@ -562,13 +567,13 @@
                     
                     const formData = new FormData();
                     formData.append('file', blob, 'frame.jpg');
-                    
-                    try {
-                        const response = await fetch('/upload', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
                         if (response.ok) {
                             const data = await response.json();
                             console.log('Detection response:', data);
@@ -618,6 +623,7 @@
             updateDetections(stableDetections);
             drawDetections(stableDetections);
             updateDetectionCount(stableDetections.length);
+            updateStats();
         }
 
         function calculateStableDetections() {
@@ -725,13 +731,13 @@
             
             detectionsList.innerHTML = detections.map((det, index) => `
                 <li class="flex items-center justify-between bg-black/30 p-3 rounded fade-in">
-                    <span class="font-medium flex items-center gap-2 text-white">
-                        <i class="fas fa-tag text-purple-400"></i>
-                        ${det.label}
-                    </span>
-                    <span class="bg-purple-500/20 px-2 py-1 rounded text-sm text-white">
-                        ${(det.confidence * 100).toFixed(1)}%
-                    </span>
+                        <span class="font-medium flex items-center gap-2 text-white">
+                            <i class="fas fa-tag text-purple-400"></i>
+                            ${det.label}
+                        </span>
+                        <span class="bg-purple-500/20 px-2 py-1 rounded text-sm text-white">
+                            ${(det.confidence * 100).toFixed(1)}%
+                        </span>
                 </li>
             `).join('');
         }
@@ -805,6 +811,23 @@
             }
         }
 
+        function updateStats() {
+            // Update detection count
+            detectionCount.textContent = currentDetections.length;
+            
+            // Update unique objects count
+            uniqueCount.textContent = uniqueObjectHistory.length;
+            
+            // Update detection status if needed
+            if (isDetecting) {
+                detectionStatus.textContent = 'Active';
+                detectionStatus.className = 'text-green-400 font-medium';
+            } else {
+                detectionStatus.textContent = 'Idle';
+                detectionStatus.className = 'text-yellow-400 font-medium';
+            }
+        }
+
         // Mobile menu functionality
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
         const mobileMenu = document.getElementById('mobileMenu');
@@ -812,17 +835,17 @@
         const mobileCategoriesMenu = document.getElementById('mobileCategoriesMenu');
 
         if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden');
-            });
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
         }
 
         if (mobileCategoriesBtn) {
-            mobileCategoriesBtn.addEventListener('click', () => {
-                mobileCategoriesMenu.classList.toggle('hidden');
-                const icon = mobileCategoriesBtn.querySelector('i');
-                icon.classList.toggle('rotate-180');
-            });
+        mobileCategoriesBtn.addEventListener('click', () => {
+            mobileCategoriesMenu.classList.toggle('hidden');
+            const icon = mobileCategoriesBtn.querySelector('i');
+            icon.classList.toggle('rotate-180');
+        });
         }
 
         // Close mobile menu when clicking outside

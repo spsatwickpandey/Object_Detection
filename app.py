@@ -100,7 +100,7 @@ def upload_file():
             # Try to open the image to verify it's valid
             img = cv2.imread(file_path)
             if img is None:
-                raise ValueError("Could not open image file - possibly corrupted")
+                raise ValueError("Could not open image file - possibly corrupted or unsupported format")
             
             # Perform object detection
             output_image_path, explanations = detect_objects(file_path)
@@ -116,7 +116,9 @@ def upload_file():
             })
         except Exception as e:
             logger.error(f"Error processing file: {e}")
-            return jsonify({"error": "Processing failed"}), 500
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return jsonify({"error": f"Processing failed: {str(e)}"}), 500
         finally:
             # Clean up uploaded file
             if file_path and os.path.exists(file_path):
