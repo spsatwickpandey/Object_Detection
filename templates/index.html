@@ -278,60 +278,113 @@
                 Object Detection AI
             </h1>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-                <!-- Left Column: Upload and Detections -->
-                <div class="space-y-4 sm:space-y-6">
-                    <!-- Upload Section -->
-                    <div class="bg-black/20 rounded-lg p-4 sm:p-6">
-                        <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
-                            <i class="fas fa-upload"></i> Upload Image
-                        </h2>
-                        <form action="/upload" method="POST" enctype="multipart/form-data">
-                            <div class="flex flex-col gap-4">
-                                <div class="w-full">
-                                    <label class="upload-zone flex flex-col items-center px-4 py-6 bg-black/20 text-white rounded-lg border-2 border-dashed border-purple-400 cursor-pointer">
-                                        <i class="fas fa-cloud-upload-alt text-3xl mb-2 text-purple-400"></i>
-                                        <span class="text-sm">Upload an image</span>
-                                        <span class="text-xs text-gray-400 mt-1">Drag & drop or click to browse</span>
-                                        <input type="file" name="file" accept="image/*" required class="hidden">
-                                    </label>
-                                </div>
-                                <button type="submit" class="group px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2">
-                                    <span class="button-text">Detect Objects</span>
-                                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                                    <span class="loading-text hidden">
-                                        <i class="fas fa-spinner fa-spin"></i> Processing...
-                                    </span>
-                                </button>
-                            </div>
-                            <div class="error-message mt-4"></div>
-                        </form>
+            <!-- Live Camera Detection Section -->
+            <div class="bg-black/20 rounded-lg p-4 sm:p-6 mb-6">
+                <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
+                    <i class="fas fa-video"></i> Live Camera Detection
+                </h2>
+                <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <button id="startCameraBtn" class="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center gap-2">
+                            <i class="fas fa-play"></i>
+                            Start Camera
+                        </button>
+                        <button id="stopCameraBtn" class="px-6 py-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center gap-2" style="display:none">
+                            <i class="fas fa-stop"></i>
+                            Stop Camera
+                        </button>
                     </div>
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-2 text-white">
+                            <input type="checkbox" id="detectionToggle" class="rounded">
+                            <span class="text-sm">Real-time Detection</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-4 rounded-lg overflow-hidden bg-black/10">
+                    <video id="videoElement" autoplay muted playsinline class="w-full h-auto max-h-[400px] object-cover" style="display:none"></video>
+                    <canvas id="canvasElement" class="w-full h-auto max-h-[400px] object-cover" style="display:none"></canvas>
+                    <div id="cameraPrompt" class="text-gray-400 text-center p-8">
+                        <i class="fas fa-camera text-4xl mb-2"></i>
+                        <p>Click "Start Camera" to begin live object detection</p>
+                        <p class="text-xs text-gray-500 mt-1">Camera permission will be requested</p>
+                    </div>
+                </div>
+            </div>
 
-                    <!-- Detections Section -->
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Left Column: Camera, Live Detection, Unique Objects -->
+                <div class="flex flex-col gap-6">
+                    <!-- Live Detection Section -->
                     <div class="result-card bg-black/20 rounded-lg p-4 sm:p-6">
                         <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
-                            <i class="fas fa-list-ul"></i> Detected Objects
+                            <i class="fas fa-eye"></i> Live Detection
+                            <div id="detectionIndicator" class="w-3 h-3 rounded-full bg-gray-500 ml-auto"></div>
                         </h2>
-                        <ul id="detections" class="space-y-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto custom-scrollbar"></ul>
+                        <div class="rounded-lg overflow-hidden flex items-center justify-center bg-black/10 relative min-h-[250px] sm:min-h-[300px]">
+                            <div id="detectionContainer" class="relative w-full h-full flex items-center justify-center">
+                                <div class="text-gray-400 text-center p-8" id="detectionPrompt">
+                                    <i class="fas fa-search text-4xl mb-2"></i>
+                                    <p>Start camera to see live detections</p>
+                                    <p class="text-xs text-gray-500 mt-1">Objects will be outlined in real-time</p>
+                                </div>
+                                <canvas id="detectionCanvas" class="w-full h-full object-cover" style="display:none"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Unique Objects Section -->
+                    <div class="result-card bg-black/20 rounded-lg p-4 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl sm:text-2xl font-semibold text-blue-300 flex items-center gap-2">
+                                <i class="fas fa-history"></i> Unique Objects History
+                            </h2>
+                            <button id="clearHistoryBtn" class="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1" onclick="clearUniqueObjectsHistory()">
+                                <i class="fas fa-trash"></i>
+                                Clear
+                            </button>
+                        </div>
+                        <div id="uniqueObjects" class="space-y-2 max-h-[200px] sm:max-h-[250px] overflow-y-auto custom-scrollbar">
+                            <div class="text-gray-400 text-center p-4 rounded-lg bg-black/20">
+                                <i class="fas fa-search text-2xl mb-2 text-gray-500"></i>
+                                <p>No unique objects detected yet</p>
+                                <p class="text-xs text-gray-500 mt-1">Objects will appear here with timestamps</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Output Image -->
+                <!-- Right Column: Current Detections -->
                 <div class="result-card bg-black/20 rounded-lg p-4 sm:p-6 h-full flex flex-col">
                     <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
-                        <i class="fas fa-image"></i> Output Image
+                        <i class="fas fa-list-ul"></i> Current Detections
                     </h2>
-                    <div class="rounded-lg overflow-hidden flex-1 flex items-center justify-center bg-black/10">
-                        <div id="imageContainer" class="relative w-full h-full flex items-center justify-center min-h-[250px] sm:min-h-[400px]">
-                            <div class="text-gray-400 text-center p-8" id="uploadPrompt">
-                                <i class="fas fa-image text-4xl mb-2"></i>
-                                <p>Upload an image to see the detection results</p>
+                    <div class="flex flex-col gap-4 flex-1">
+                        <!-- Live Objects Section -->
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-blue-300 mb-3 flex items-center gap-2">
+                                <i class="fas fa-eye"></i> Live Objects
+                            </h3>
+                            <ul id="detections" class="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar"></ul>
+                        </div>
+                        
+                        <!-- Unique Objects History Section -->
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-green-300 mb-3 flex items-center gap-2">
+                                <i class="fas fa-history"></i> Unique Objects History
+                            </h3>
+                            <div id="uniqueObjectsHistory" class="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                                <div class="text-gray-400 text-center p-4 rounded-lg bg-black/20">
+                                    <i class="fas fa-search text-xl mb-2 text-gray-500"></i>
+                                    <p class="text-sm">No unique objects detected yet</p>
+                                    <p class="text-xs text-gray-500 mt-1">Objects will appear here with timestamps</p>
+                                </div>
                             </div>
-                            <div id="imageWrapper" class="w-full h-full" style="display:none">
-                                <img id="outputImage" src="" alt="Output" 
-                                     class="w-full h-full object-contain transition-all duration-300">
-                            </div>
+                            <button id="clearHistoryBtn" class="mt-2 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1" onclick="clearUniqueObjectsHistory()">
+                                <i class="fas fa-trash"></i>
+                                Clear History
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -347,132 +400,410 @@
     </footer>
 
     <script>
-        // File input preview
-        const fileInput = document.querySelector('input[type="file"]');
-        const label = document.querySelector('label span:nth-child(2)');
-        const form = document.querySelector('form');
-        const errorMessage = document.querySelector('.error-message');
-        const buttonText = document.querySelector('.button-text');
-        const loadingText = document.querySelector('.loading-text');
+        // Global variables for camera detection
+        let videoElement = null;
+        let canvasElement = null;
+        let detectionCanvas = null;
+        let stream = null;
+        let isDetecting = false;
+        let detectionInterval = null;
+        let currentDetections = [];
+        let detectionHistory = [];
+        let uniqueObjectHistory = []; // Stores unique objects with timestamps
+        let lastUniqueUpdate = 0;
+        let lastDetectionTime = 0;
+        const detectionDebounceTime = 200; // 200ms debounce
 
-        // Drag and drop functionality
-        const uploadZone = document.querySelector('.upload-zone');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            uploadZone.addEventListener(eventName, preventDefaults, false);
+        // DOM elements
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const detectionToggle = document.getElementById('detectionToggle');
+        const cameraPrompt = document.getElementById('cameraPrompt');
+        const detectionPrompt = document.getElementById('detectionPrompt');
+        const detectionIndicator = document.getElementById('detectionIndicator');
+        const detectionsList = document.getElementById('detections');
+        const uniqueObjectsContainer = document.getElementById('uniqueObjects');
+        const uniqueObjectsHistoryContainer = document.getElementById('uniqueObjectsHistory');
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            videoElement = document.getElementById('videoElement');
+            canvasElement = document.getElementById('canvasElement');
+            detectionCanvas = document.getElementById('detectionCanvas');
+            
+            // Event listeners
+            startCameraBtn.addEventListener('click', startCamera);
+            stopCameraBtn.addEventListener('click', stopCamera);
+            detectionToggle.addEventListener('change', toggleDetection);
         });
 
-        function preventDefaults (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            uploadZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            uploadZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight(e) {
-            uploadZone.classList.add('border-purple-500', 'bg-black/30');
-        }
-
-        function unhighlight(e) {
-            uploadZone.classList.remove('border-purple-500', 'bg-black/30');
-        }
-
-        uploadZone.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            fileInput.files = files;
-            handleFiles(files);
-        }
-
-        function handleFiles(files) {
-            if(files.length > 0) {
-                label.textContent = files[0].name;
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    } 
+                });
+                
+                videoElement.srcObject = stream;
+                videoElement.style.display = 'block';
+                canvasElement.style.display = 'block';
+                cameraPrompt.style.display = 'none';
+                
+                startCameraBtn.style.display = 'none';
+                stopCameraBtn.style.display = 'flex';
+                
+                // Wait for video to be ready
+                videoElement.addEventListener('loadedmetadata', () => {
+                    canvasElement.width = videoElement.videoWidth;
+                    canvasElement.height = videoElement.videoHeight;
+                });
+                
+                console.log('Camera started successfully');
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                alert('Could not access camera. Please check permissions.');
             }
         }
 
-        fileInput.addEventListener('change', function(e) {
-            handleFiles(this.files);
-        });
-
-        // Form submission
-        form.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const formData = new FormData(this);
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
             
-            // Reset state
-            errorMessage.style.display = 'none';
-            buttonText.classList.add('hidden');
-            loadingText.classList.remove('hidden');
-            form.classList.add('loading');
+            videoElement.style.display = 'none';
+            canvasElement.style.display = 'none';
+            cameraPrompt.style.display = 'block';
+            
+            startCameraBtn.style.display = 'flex';
+            stopCameraBtn.style.display = 'none';
+            
+            // Stop detection
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+                detectionInterval = null;
+            }
+            
+            isDetecting = false;
+            detectionToggle.checked = false;
+            detectionIndicator.className = 'w-3 h-3 rounded-full bg-gray-500 ml-auto';
+            
+            // Clear current detections but preserve unique history
+            currentDetections = [];
+            updateDetections([]);
+            
+            console.log('Camera stopped');
+        }
+
+        function toggleDetection() {
+            if (detectionToggle.checked && stream) {
+                startDetection();
+            } else {
+                stopDetection();
+            }
+        }
+
+        function startDetection() {
+            if (!stream) {
+                detectionToggle.checked = false;
+                return;
+            }
+            
+            isDetecting = true;
+            detectionIndicator.className = 'w-3 h-3 rounded-full bg-green-500 ml-auto animate-pulse';
+            detectionPrompt.style.display = 'none';
+            
+            // Start processing frames
+            detectionInterval = setInterval(processFrame, 100); // Process every 100ms
+            console.log('Detection started');
+        }
+
+        function stopDetection() {
+            isDetecting = false;
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+                detectionInterval = null;
+            }
+            
+            detectionIndicator.className = 'w-3 h-3 rounded-full bg-gray-500 ml-auto';
+            detectionPrompt.style.display = 'block';
+            
+            // Clear current detections but preserve unique history
+            currentDetections = [];
+            updateDetections([]);
+            
+            console.log('Detection stopped');
+        }
+
+        async function processFrame() {
+            if (!isDetecting || !videoElement || videoElement.readyState !== 4) {
+                return;
+            }
+            
+            const now = Date.now();
+            if (now - lastDetectionTime < detectionDebounceTime) {
+                return;
+            }
+            lastDetectionTime = now;
             
             try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                // Convert video frame to blob
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                ctx.drawImage(videoElement, 0, 0);
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-
-                if (data.output_image) {
-                    const uploadPrompt = document.getElementById('uploadPrompt');
-                    const imageWrapper = document.getElementById('imageWrapper');
-                    const outputImage = document.getElementById('outputImage');
+                canvas.toBlob(async (blob) => {
+                    if (!blob) return;
                     
-                    // Force browser to load new image by adding timestamp
-                    const imageUrl = `${data.output_image}?t=${new Date().getTime()}`;
+                    const formData = new FormData();
+                    formData.append('file', blob, 'frame.jpg');
                     
-                    // Create new image off-screen
-                    const tempImage = new Image();
-                    tempImage.onload = function() {
-                        // Update the actual image only after new one is loaded
-                        outputImage.src = imageUrl;
-                        uploadPrompt.style.display = 'none';
-                        imageWrapper.style.display = 'block';
-                        outputImage.classList.add('fade-in');
-                    };
-                    tempImage.src = imageUrl;
-                }
-
-                // Update detections list
-                const detectionsList = document.getElementById('detections');
-                detectionsList.innerHTML = '';
-                data.detections.forEach((det, index) => {
-                    const li = document.createElement('li');
-                    li.className = 'flex items-center justify-between bg-black/30 p-3 rounded fade-in';
-                    li.style.animationDelay = `${index * 0.1}s`;
-                    li.innerHTML = `
-                        <span class="font-medium flex items-center gap-2 text-white">
-                            <i class="fas fa-tag text-purple-400"></i>
-                            ${det.label}
-                        </span>
-                        <span class="bg-purple-500/20 px-2 py-1 rounded text-sm text-white">
-                            ${(det.confidence * 100).toFixed(1)}%
-                        </span>
-                    `;
-                    detectionsList.appendChild(li);
-                });
+                    try {
+                        const response = await fetch('/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log('Detection response:', data);
+                            if (data.detections && data.detections.length > 0) {
+                                console.log('Processing detections:', data.detections);
+                                processDetectionResults(data.detections);
+                            } else {
+                                console.log('No detections found in this frame');
+                                processDetectionResults([]); // Process empty detections to update UI
+                            }
+                        } else {
+                            console.error('Upload failed:', response.status, response.statusText);
+                            if (response.status !== 500) {
+                                console.error('Non-500 error, might be temporary');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Detection error:', error);
+                        if (error.name !== 'TypeError') {
+                            console.error('Non-network error:', error);
+                        }
+                    }
+                }, 'image/jpeg', 0.8);
             } catch (error) {
-                console.error('Error:', error);
-                errorMessage.textContent = 'An error occurred while processing the image. Please try again.';
-                errorMessage.style.display = 'block';
-            } finally {
-                buttonText.classList.remove('hidden');
-                loadingText.classList.add('hidden');
-                form.classList.remove('loading');
+                console.error('Error processing frame:', error);
             }
-        });
+        }
+
+        function processDetectionResults(newDetections) {
+            // Add to detection history
+            detectionHistory.push({
+                timestamp: Date.now(),
+                detections: newDetections
+            });
+            
+            // Keep only last 5 detections for stability
+            if (detectionHistory.length > 5) {
+                detectionHistory.shift();
+            }
+            
+            // Calculate stable detections
+            const stableDetections = calculateStableDetections();
+            trackUniqueObjects(stableDetections);
+            
+            // Always update UI with current state
+            currentDetections = stableDetections;
+            updateDetections(stableDetections);
+            drawDetections(stableDetections);
+            updateDetectionCount(stableDetections.length);
+        }
+
+        function calculateStableDetections() {
+            if (detectionHistory.length === 0) return [];
+            
+            // Show the most recent detection immediately with lower confidence threshold
+            const latestDetection = detectionHistory[detectionHistory.length - 1];
+            if (latestDetection && latestDetection.detections) {
+                return latestDetection.detections.filter(det => det.confidence >= 0.25);
+            }
+            
+            return [];
+        }
+
+        function trackUniqueObjects(detections) {
+            const now = Date.now();
+            if (now - lastUniqueUpdate < 2000) return; // Update every 2 seconds
+            
+            lastUniqueUpdate = now;
+            
+            detections.forEach(detection => {
+                if (detection.confidence < 0.3) return; // Only track high confidence detections
+                
+                const existingIndex = uniqueObjectHistory.findIndex(
+                    obj => obj.label === detection.label
+                );
+                
+                if (existingIndex >= 0) {
+                    // Update existing object
+                    const existing = uniqueObjectHistory[existingIndex];
+                    existing.lastSeen = now;
+                    existing.count++;
+                    existing.latestConfidence = Math.max(existing.latestConfidence, detection.confidence);
+                } else {
+                    // Add new unique object
+                    uniqueObjectHistory.push({
+                        label: detection.label,
+                        firstSeen: now,
+                        lastSeen: now,
+                        count: 1,
+                        latestConfidence: detection.confidence
+                    });
+                }
+            });
+            
+            // Keep only last 20 unique objects
+            if (uniqueObjectHistory.length > 20) {
+                uniqueObjectHistory = uniqueObjectHistory.slice(-20);
+            }
+            
+            updateUniqueObjectsDisplay();
+        }
+
+        function updateUniqueObjectsDisplay() {
+            if (uniqueObjectHistory.length === 0) {
+                uniqueObjectsContainer.innerHTML = `
+                    <div class="text-gray-400 text-center p-4 rounded-lg bg-black/20">
+                        <i class="fas fa-search text-2xl mb-2 text-gray-500"></i>
+                        <p>No unique objects detected yet</p>
+                        <p class="text-xs text-gray-500 mt-1">Objects will appear here with timestamps</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedObjects = uniqueObjectHistory.sort((a, b) => b.lastSeen - a.lastSeen);
+            
+            uniqueObjectsContainer.innerHTML = sortedObjects.map(obj => {
+                const timeAgo = Math.floor((Date.now() - obj.lastSeen) / 1000);
+                const timeAgoText = timeAgo < 60 ? `${timeAgo}s ago` : 
+                                  timeAgo < 3600 ? `${Math.floor(timeAgo / 60)}m ago` : 
+                                  `${Math.floor(timeAgo / 3600)}h ago`;
+                
+                return `
+                    <div class="bg-black/30 p-3 rounded-lg border-l-4 border-blue-400">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-medium text-white">${obj.label}</span>
+                            <span class="text-xs text-gray-400">${timeAgoText}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-gray-400">
+                            <span>Count: ${obj.count}</span>
+                            <span>Confidence: ${(obj.latestConfidence * 100).toFixed(1)}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearUniqueObjectsHistory() {
+            uniqueObjectHistory = [];
+            updateUniqueObjectsDisplay();
+        }
+
+        function updateDetections(detections) {
+            if (detections.length === 0) {
+                detectionsList.innerHTML = `
+                    <div class="text-gray-400 text-center p-4 rounded-lg bg-black/20">
+                        <i class="fas fa-search text-xl mb-2 text-gray-500"></i>
+                        <p>No objects detected</p>
+                        <p class="text-xs text-gray-500 mt-1">Objects will appear here when detected</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            detectionsList.innerHTML = detections.map((det, index) => `
+                <li class="flex items-center justify-between bg-black/30 p-3 rounded fade-in">
+                    <span class="font-medium flex items-center gap-2 text-white">
+                        <i class="fas fa-tag text-purple-400"></i>
+                        ${det.label}
+                    </span>
+                    <span class="bg-purple-500/20 px-2 py-1 rounded text-sm text-white">
+                        ${(det.confidence * 100).toFixed(1)}%
+                    </span>
+                </li>
+            `).join('');
+        }
+
+        function drawDetections(detections) {
+            const canvas = canvasElement;
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas and draw video frame
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            
+            // Draw bounding boxes
+            detections.forEach((det, index) => {
+                if (det.bbox && det.bbox.length >= 4) {
+                    const [x1, y1, x2, y2] = det.bbox;
+                    
+                    // Generate color based on class name
+                    const color = generateColor(det.label);
+                    
+                    // Draw bounding box with glow effect
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 10;
+                    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                    
+                    // Reset shadow
+                    ctx.shadowBlur = 0;
+                    
+                    // Draw label background
+                    const label = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
+                    const textMetrics = ctx.measureText(label);
+                    const textWidth = textMetrics.width;
+                    const textHeight = 20;
+                    
+                    // Rounded rectangle for label background
+                    const labelX = x1;
+                    const labelY = y1 - textHeight - 5;
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(labelX, labelY, textWidth + 10, textHeight);
+                    
+                    // Draw label text
+                    ctx.fillStyle = 'white';
+                    ctx.font = '14px Arial';
+                    ctx.fillText(label, labelX + 5, labelY + 15);
+                }
+            });
+        }
+
+        function generateColor(className) {
+            const colors = [
+                '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+            ];
+            const hash = className.split('').reduce((a, b) => {
+                a = ((a << 5) - a) + b.charCodeAt(0);
+                return a & a;
+            }, 0);
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function updateDetectionCount(count) {
+            // Update detection indicator based on count
+            if (count > 0) {
+                detectionIndicator.className = 'w-3 h-3 rounded-full bg-green-500 ml-auto animate-pulse';
+            } else {
+                detectionIndicator.className = 'w-3 h-3 rounded-full bg-yellow-500 ml-auto';
+            }
+        }
 
         // Mobile menu functionality
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
@@ -480,32 +811,24 @@
         const mobileCategoriesBtn = document.getElementById('mobileCategoriesBtn');
         const mobileCategoriesMenu = document.getElementById('mobileCategoriesMenu');
 
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
 
-        mobileCategoriesBtn.addEventListener('click', () => {
-            mobileCategoriesMenu.classList.toggle('hidden');
-            const icon = mobileCategoriesBtn.querySelector('i');
-            icon.classList.toggle('rotate-180');
-        });
+        if (mobileCategoriesBtn) {
+            mobileCategoriesBtn.addEventListener('click', () => {
+                mobileCategoriesMenu.classList.toggle('hidden');
+                const icon = mobileCategoriesBtn.querySelector('i');
+                icon.classList.toggle('rotate-180');
+            });
+        }
 
         // Close mobile menu when clicking outside
         document.addEventListener('click', (e) => {
-            if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+            if (mobileMenu && !mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
                 mobileMenu.classList.add('hidden');
-            }
-        });
-
-        // Add these styles to handle mobile orientation changes
-        window.addEventListener('orientationchange', () => {
-            const imageContainer = document.getElementById('imageContainer');
-            if (window.orientation === 90 || window.orientation === -90) {
-                // Landscape
-                imageContainer.style.minHeight = '200px';
-            } else {
-                // Portrait
-                imageContainer.style.minHeight = '250px';
             }
         });
     </script>
