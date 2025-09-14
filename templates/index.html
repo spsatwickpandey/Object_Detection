@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Object Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .bg-mesh {
+            background-color: #000;
+            background-image:
+                radial-gradient(at 40% 20%, rgba(139, 92, 246, 0.6) 0px, transparent 50%),
+                radial-gradient(at 80% 0%, rgba(236, 72, 153, 0.6) 0px, transparent 50%),
+                radial-gradient(at 0% 50%, rgba(59, 130, 246, 0.6) 0px, transparent 50%);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .error-message {
+            @apply bg-red-500/20 text-red-200 p-4 rounded-lg mt-4;
+            display: none;
+        }
+
+        .upload-zone {
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .result-card {
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: scale(1.01);
+        }
+
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139, 92, 246, 0.5) rgba(0, 0, 0, 0.2);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(139, 92, 246, 0.5);
+            border-radius: 3px;
+        }
+
+        #imageContainer {
+            min-height: 400px;
+        }
+
+        /* Dropdown menu animations */
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .group:hover .group-hover\:visible {
+            animation: fadeInScale 0.2s ease-out forwards;
+        }
+
+        /* Custom scrollbar for dropdown */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(139, 92, 246, 0.5) rgba(0, 0, 0, 0.2);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 2px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgba(139, 92, 246, 0.5);
+            border-radius: 2px;
+        }
+
+        /* Mobile-specific styles */
+        @media (max-width: 640px) {
+            .upload-zone {
+                padding: 1rem;
+            }
+
+            .fade-in {
+                animation-duration: 0.3s;
+            }
+
+            #imageContainer {
+                transition: min-height 0.3s ease;
+            }
+        }
+
+        /* Improved mobile scrolling */
+        .smooth-scroll {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+        }
+
+        /* Better touch targets for mobile */
+        @media (max-width: 640px) {
+            button, 
+            a, 
+            .upload-zone {
+                min-height: 44px;
+            }
+
+            .custom-scrollbar {
+                scrollbar-width: thin;
+            }
+        }
+    </style>
+</head>
+<body class="bg-mesh">
+    <!-- Navbar -->
+    <nav class="bg-black/30 backdrop-blur-lg border-b border-white/10 relative z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-robot text-purple-400 text-2xl mr-2"></i>
+                    <span class="text-white font-bold text-xl hidden sm:inline">Object Detection AI</span>
+                    <span class="text-white font-bold text-xl sm:hidden">AI Vision</span>
+                </div>
+                <div class="hidden sm:flex items-center space-x-8">
+                    <a href="https://viso.ai/deep-learning/yolov3-overview/" class="text-gray-300 hover:text-white transition-colors" target="_blank">About</a>
+                    <a href="https://www.tensorflow.org/hub/tutorials/tf2_object_detection" class="text-gray-300 hover:text-white transition-colors" target="_blank">Documentation</a>
+                    <div class="relative group">
+                        <button class="text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                            Categories
+                            <i class="fas fa-chevron-down text-xs transition-transform group-hover:rotate-180"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-64 bg-black/95 backdrop-blur-xl rounded-xl shadow-lg py-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-300 z-[60]">
+                            <div class="max-h-[70vh] overflow-y-auto custom-scrollbar px-2">
+                                <div class="grid grid-cols-2 gap-2 p-2">
+                                    <div class="col-span-2 mb-2">
+                                        <div class="text-purple-400 text-sm font-semibold px-3 py-1">
+                                            Detectable Objects
+                                        </div>
+                                    </div>
+                                    <div class="category-vehicles bg-purple-500/10 rounded-lg p-3">
+                                        <h3 class="text-purple-400 text-sm font-semibold mb-2">Vehicles</h3>
+                                        <ul class="space-y-1 text-sm">
+                                            <li class="text-gray-300 hover:text-white transition-colors">🚗 car</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🚲 bicycle</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🏍️ motorbike</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">✈️ aeroplane</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🚌 bus</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🚂 train</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🚛 truck</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🚤 boat</li>
+                                        </ul>
+                                    </div>
+                                    <div class="category-animals bg-pink-500/10 rounded-lg p-3">
+                                        <h3 class="text-pink-400 text-sm font-semibold mb-2">Animals</h3>
+                                        <ul class="space-y-1 text-sm">
+                                            <li class="text-gray-300 hover:text-white transition-colors">🐦 bird</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🐱 cat</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🐕 dog</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🐎 horse</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🐑 sheep</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🐄 cow</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🐘 elephant</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🐻 bear</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🦒 giraffe</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🦓 zebra</li>
+                                        </ul>
+                                    </div>
+                                    <div class="category-objects bg-blue-500/10 rounded-lg p-3">
+                                        <h3 class="text-blue-400 text-sm font-semibold mb-2">Common Objects</h3>
+                                        <ul class="space-y-1 text-sm">
+                                            <li class="text-gray-300 hover:text-white transition-colors">📱 cell phone</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">💻 laptop</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">📺 tv monitor</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🛋️ sofa</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🪑 chair</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🛏️ bed</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">⌚ clock</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">📚 book</li>
+                                        </ul>
+                                    </div>
+                                    <div class="category-kitchen bg-green-500/10 rounded-lg p-3">
+                                        <h3 class="text-green-400 text-sm font-semibold mb-2">Kitchen Items</h3>
+                                        <ul class="space-y-1 text-sm">
+                                            <li class="text-gray-300 hover:text-white transition-colors">🥄 spoon</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🔪 knife</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🍽️ fork</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🥤 cup</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🍷 wine glass</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🍾 bottle</li>
+                                            <li class="text-gray-300 hover:text-white transition-colors">🥣 bowl</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Mobile menu button -->
+                <div class="sm:hidden">
+                    <button type="button" id="mobileMenuBtn" class="text-gray-300 hover:text-white">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="sm:hidden hidden">
+        <div class="px-2 pt-2 pb-3 space-y-1 bg-black/95 backdrop-blur-xl">
+            <a href="https://viso.ai/deep-learning/yolov3-overview/" class="block px-3 py-2 text-gray-300 hover:text-white transition-colors" target="_blank">About</a>
+            <a href="https://www.tensorflow.org/hub/tutorials/tf2_object_detection" class="block px-3 py-2 text-gray-300 hover:text-white transition-colors" target="_blank">Documentation</a>
+            <button id="mobileCategoriesBtn" class="w-full text-left px-3 py-2 text-gray-300 hover:text-white transition-colors">
+                Categories <i class="fas fa-chevron-down ml-2 text-xs"></i>
+            </button>
+            <div id="mobileCategoriesMenu" class="hidden px-4 py-2">
+                <!-- Mobile categories content -->
+                <div class="space-y-4">
+                    <div class="bg-purple-500/10 rounded-lg p-3">
+                        <h3 class="text-purple-400 text-sm font-semibold mb-2">Vehicles</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <!-- Add your vehicle items here -->
+                        </div>
+                    </div>
+                    <!-- Repeat for other categories -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-4 sm:py-8 max-w-7xl min-h-[calc(100vh-8rem)] relative z-10">
+        <div class="bg-black/30 backdrop-blur-xl rounded-2xl p-4 sm:p-8 shadow-2xl fade-in">
+            <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 sm:mb-8 bg-gradient-to-r from-purple-400 to-pink-500 text-transparent bg-clip-text">
+                Object Detection AI
+            </h1>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
+                <!-- Left Column: Upload and Detections -->
+                <div class="space-y-4 sm:space-y-6">
+                    <!-- Upload Section -->
+                    <div class="bg-black/20 rounded-lg p-4 sm:p-6">
+                        <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
+                            <i class="fas fa-upload"></i> Upload Image
+                        </h2>
+                        <form action="/upload" method="POST" enctype="multipart/form-data">
+                            <div class="flex flex-col gap-4">
+                                <div class="w-full">
+                                    <label class="upload-zone flex flex-col items-center px-4 py-6 bg-black/20 text-white rounded-lg border-2 border-dashed border-purple-400 cursor-pointer">
+                                        <i class="fas fa-cloud-upload-alt text-3xl mb-2 text-purple-400"></i>
+                                        <span class="text-sm">Upload an image</span>
+                                        <span class="text-xs text-gray-400 mt-1">Drag & drop or click to browse</span>
+                                        <input type="file" name="file" accept="image/*" required class="hidden">
+                                    </label>
+                                </div>
+                                <button type="submit" class="group px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-300 flex items-center justify-center gap-2">
+                                    <span class="button-text">Detect Objects</span>
+                                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                    <span class="loading-text hidden">
+                                        <i class="fas fa-spinner fa-spin"></i> Processing...
+                                    </span>
+                                </button>
+                            </div>
+                            <div class="error-message mt-4"></div>
+                        </form>
+                    </div>
+
+                    <!-- Detections Section -->
+                    <div class="result-card bg-black/20 rounded-lg p-4 sm:p-6">
+                        <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
+                            <i class="fas fa-list-ul"></i> Detected Objects
+                        </h2>
+                        <ul id="detections" class="space-y-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto custom-scrollbar"></ul>
+                    </div>
+                </div>
+
+                <!-- Right Column: Output Image -->
+                <div class="result-card bg-black/20 rounded-lg p-4 sm:p-6 h-full flex flex-col">
+                    <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
+                        <i class="fas fa-image"></i> Output Image
+                    </h2>
+                    <div class="rounded-lg overflow-hidden flex-1 flex items-center justify-center bg-black/10">
+                        <div id="imageContainer" class="relative w-full h-full flex items-center justify-center min-h-[250px] sm:min-h-[400px]">
+                            <div class="text-gray-400 text-center p-8" id="uploadPrompt">
+                                <i class="fas fa-image text-4xl mb-2"></i>
+                                <p>Upload an image to see the detection results</p>
+                            </div>
+                            <div id="imageWrapper" class="w-full h-full" style="display:none">
+                                <img id="outputImage" src="" alt="Output" 
+                                     class="w-full h-full object-contain transition-all duration-300">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black/30 backdrop-blur-lg border-t border-white/10 py-4 sm:py-6">
+        <div class="container mx-auto px-4 text-center text-gray-400">
+            <p class="text-sm sm:text-base">© 2024 Satwick Pandey. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // File input preview
+        const fileInput = document.querySelector('input[type="file"]');
+        const label = document.querySelector('label span:nth-child(2)');
+        const form = document.querySelector('form');
+        const errorMessage = document.querySelector('.error-message');
+        const buttonText = document.querySelector('.button-text');
+        const loadingText = document.querySelector('.loading-text');
+
+        // Drag and drop functionality
+        const uploadZone = document.querySelector('.upload-zone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            uploadZone.classList.add('border-purple-500', 'bg-black/30');
+        }
+
+        function unhighlight(e) {
+            uploadZone.classList.remove('border-purple-500', 'bg-black/30');
+        }
+
+        uploadZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if(files.length > 0) {
+                label.textContent = files[0].name;
+            }
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(this.files);
+        });
+
+        // Form submission
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            // Reset state
+            errorMessage.style.display = 'none';
+            buttonText.classList.add('hidden');
+            loadingText.classList.remove('hidden');
+            form.classList.add('loading');
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+
+                if (data.output_image) {
+                    const uploadPrompt = document.getElementById('uploadPrompt');
+                    const imageWrapper = document.getElementById('imageWrapper');
+                    const outputImage = document.getElementById('outputImage');
+                    
+                    // Force browser to load new image by adding timestamp
+                    const imageUrl = `${data.output_image}?t=${new Date().getTime()}`;
+                    
+                    // Create new image off-screen
+                    const tempImage = new Image();
+                    tempImage.onload = function() {
+                        // Update the actual image only after new one is loaded
+                        outputImage.src = imageUrl;
+                        uploadPrompt.style.display = 'none';
+                        imageWrapper.style.display = 'block';
+                        outputImage.classList.add('fade-in');
+                    };
+                    tempImage.src = imageUrl;
+                }
+
+                // Update detections list
+                const detectionsList = document.getElementById('detections');
+                detectionsList.innerHTML = '';
+                data.detections.forEach((det, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between bg-black/30 p-3 rounded fade-in';
+                    li.style.animationDelay = `${index * 0.1}s`;
+                    li.innerHTML = `
+                        <span class="font-medium flex items-center gap-2 text-white">
+                            <i class="fas fa-tag text-purple-400"></i>
+                            ${det.label}
+                        </span>
+                        <span class="bg-purple-500/20 px-2 py-1 rounded text-sm text-white">
+                            ${(det.confidence * 100).toFixed(1)}%
+                        </span>
+                    `;
+                    detectionsList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.textContent = 'An error occurred while processing the image. Please try again.';
+                errorMessage.style.display = 'block';
+            } finally {
+                buttonText.classList.remove('hidden');
+                loadingText.classList.add('hidden');
+                form.classList.remove('loading');
+            }
+        });
+
+        // Mobile menu functionality
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileCategoriesBtn = document.getElementById('mobileCategoriesBtn');
+        const mobileCategoriesMenu = document.getElementById('mobileCategoriesMenu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        mobileCategoriesBtn.addEventListener('click', () => {
+            mobileCategoriesMenu.classList.toggle('hidden');
+            const icon = mobileCategoriesBtn.querySelector('i');
+            icon.classList.toggle('rotate-180');
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                mobileMenu.classList.add('hidden');
+            }
+        });
+
+        // Add these styles to handle mobile orientation changes
+        window.addEventListener('orientationchange', () => {
+            const imageContainer = document.getElementById('imageContainer');
+            if (window.orientation === 90 || window.orientation === -90) {
+                // Landscape
+                imageContainer.style.minHeight = '200px';
+            } else {
+                // Portrait
+                imageContainer.style.minHeight = '250px';
+            }
+        });
+    </script>
+</body>
+</html>
