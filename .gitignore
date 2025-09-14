@@ -76,7 +76,7 @@ coverage.xml
 .ipynb_checkpoints
 
 # pyenv
-.python-version
+# .python-version  # Allow this for deployment
 
 # pipenv
 Pipfile.lock
