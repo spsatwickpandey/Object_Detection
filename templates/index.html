@@ -470,6 +470,10 @@
                     videoElement.style.height = '100%';
                     canvasElement.style.width = '100%';
                     canvasElement.style.height = '100%';
+                    canvasElement.style.position = 'absolute';
+                    canvasElement.style.top = '0';
+                    canvasElement.style.left = '0';
+                    canvasElement.style.zIndex = '10';
                 });
                 
                 console.log('Camera started successfully');
@@ -762,6 +766,9 @@
             const canvas = canvasElement;
             const ctx = canvas.getContext('2d');
             
+            // Clear the canvas first
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             // Get container dimensions
             const container = canvas.parentElement;
             const containerRect = container.getBoundingClientRect();
@@ -769,9 +776,6 @@
             // Set canvas to container size for display
             canvas.width = containerRect.width;
             canvas.height = containerRect.height;
-            
-            // Draw video frame scaled to fit container
-            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
             
             // Calculate scaling factors
             const scaleX = canvas.width / videoElement.videoWidth;
@@ -791,15 +795,25 @@
                     // Generate color based on class name
                     const color = generateColor(det.label);
                     
-                    // Draw bounding box with glow effect
+                    // Draw bounding box with enhanced visibility
                     ctx.strokeStyle = color;
-                    ctx.lineWidth = 3;
+                    ctx.lineWidth = 4;
                     ctx.shadowColor = color;
-                    ctx.shadowBlur = 10;
+                    ctx.shadowBlur = 15;
+                    
+                    // Draw outer border
                     ctx.strokeRect(scaledX1, scaledY1, scaledX2 - scaledX1, scaledY2 - scaledY1);
                     
-                    // Reset shadow
+                    // Draw inner border for better visibility
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
                     ctx.shadowBlur = 0;
+                    ctx.strokeRect(scaledX1 + 1, scaledY1 + 1, scaledX2 - scaledX1 - 2, scaledY2 - scaledY1 - 2);
+                    
+                    // Reset to original color for label
+                    ctx.strokeStyle = color;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 15;
                     
                     // Draw label background
                     const label = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
