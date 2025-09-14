@@ -40,9 +40,9 @@ for folder in [UPLOAD_FOLDER, OUTPUT_FOLDER, STATIC_IMAGES_FOLDER]:
 
 # Load YOLO model
 try:
-    # Try to use GPU if available
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model = YOLO('yolov8x.pt')  # Load YOLOv8x model
+    # Force CPU usage for Render deployment to avoid memory issues
+    device = 'cpu'  # Always use CPU for Render deployment
+    model = YOLO('yolov8n.pt')  # Load YOLOv8n model (nano - much smaller)
     model.to(device)
     logger.info(f"Model loaded successfully on {device}")
 except Exception as e:
@@ -112,8 +112,8 @@ def detect_objects(image_path):
     if model is None:
         raise Exception("Model not properly loaded")
     try:
-        # Perform prediction
-        results = model(image_path, conf=CONFIDENCE_THRESHOLD, iou=IOU_THRESHOLD)[0]
+        # Perform prediction with memory optimization
+        results = model(image_path, conf=CONFIDENCE_THRESHOLD, iou=IOU_THRESHOLD, verbose=False)[0]
         
         # Get the original image for drawing
         image = cv2.imread(image_path)
@@ -121,23 +121,26 @@ def detect_objects(image_path):
         explanations = []
         
         # Process detections
-        for detection in results.boxes.data.tolist():
-            x1, y1, x2, y2, confidence, class_id = detection
-            x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
-            class_name = results.names[int(class_id)]
-            
-            color = generate_color(class_name)
-            cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
-            
-            label = f"{class_name} {confidence:.2f}"
-            text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
-            cv2.rectangle(image, (x1, y1 - text_size[1] - 10), (x1 + text_size[0], y1), color, -1)
-            cv2.putText(image, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-            
-            explanations.append({
-                "label": class_name,
-                "confidence": confidence
-            })
+        if results.boxes is not None and len(results.boxes.data) > 0:
+            for detection in results.boxes.data.tolist():
+                if len(detection) >= 6:
+                    x1, y1, x2, y2, confidence, class_id = detection[:6]
+                    x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+                    class_name = results.names[int(class_id)]
+                    
+                    color = generate_color(class_name)
+                    cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+                    
+                    label = f"{class_name} {confidence:.2f}"
+                    text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 2)[0]
+                    cv2.rectangle(image, (x1, y1 - text_size[1] - 10), (x1 + text_size[0], y1), color, -1)
+                    cv2.putText(image, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                    
+                    explanations.append({
+                        "label": class_name,
+                        "confidence": confidence,
+                        "bbox": [x1, y1, x2, y2]
+                    })
 
         explanations.sort(key=lambda x: x['confidence'], reverse=True)
         
