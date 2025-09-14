@@ -280,25 +280,25 @@
 
 
             <!-- Dashboard Grid Layout -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Left Column: Camera Feed -->
                 <div class="lg:col-span-2">
-                    <div class="bg-black/20 rounded-lg p-4 sm:p-6 h-full flex flex-col">
+                    <div class="bg-black/20 rounded-lg p-4 sm:p-6">
                         <h2 class="text-xl sm:text-2xl font-semibold mb-4 text-purple-300 flex items-center gap-2">
                             <i class="fas fa-video"></i> Live Camera Feed
                             <div id="detectionIndicator" class="w-3 h-3 rounded-full bg-gray-500 ml-auto"></div>
                         </h2>
-                        <div class="rounded-lg overflow-hidden bg-black/10 relative flex-1 flex items-center justify-center">
+                        <div class="rounded-lg overflow-hidden bg-black/10 relative" style="aspect-ratio: 16/9; min-height: 400px;">
                             <video id="videoElement" autoplay muted playsinline class="w-full h-full object-cover" style="display:none"></video>
                             <canvas id="canvasElement" class="w-full h-full object-cover" style="display:none"></canvas>
-                            <div id="cameraPrompt" class="text-gray-400 text-center p-8 flex flex-col items-center justify-center">
+                            <div id="cameraPrompt" class="text-gray-400 text-center p-8 flex flex-col items-center justify-center absolute inset-0">
                                 <i class="fas fa-camera text-6xl mb-4 text-purple-400"></i>
                                 <p class="text-lg mb-2">Ready for Live Detection</p>
                                 <p class="text-sm text-gray-500">Click "Start Camera" to begin real-time object detection</p>
                             </div>
                         </div>
                     </div>
-                </div>
+                                </div>
 
                 <!-- Right Column: Detection Controls & Stats -->
                 <div class="space-y-6">
@@ -442,8 +442,8 @@
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
                         facingMode: 'user'
                     } 
                 });
@@ -456,10 +456,20 @@
                 startCameraBtn.style.display = 'none';
                 stopCameraBtn.style.display = 'flex';
                 
-                // Wait for video to be ready
+                // Wait for video to be ready and set proper sizing
                 videoElement.addEventListener('loadedmetadata', () => {
-                    canvasElement.width = videoElement.videoWidth;
-                    canvasElement.height = videoElement.videoHeight;
+                    const container = videoElement.parentElement;
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    // Set canvas to match container size for proper display
+                    canvasElement.width = containerRect.width;
+                    canvasElement.height = containerRect.height;
+                    
+                    // Ensure video fills the container properly
+                    videoElement.style.width = '100%';
+                    videoElement.style.height = '100%';
+                    canvasElement.style.width = '100%';
+                    canvasElement.style.height = '100%';
                 });
                 
                 console.log('Camera started successfully');
@@ -559,12 +569,14 @@
             lastDetectionTime = now;
             
             try {
-                // Convert video frame to blob
+                // Convert video frame to blob with proper scaling
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
+                
+                // Use video's natural dimensions for processing
                 canvas.width = videoElement.videoWidth;
                 canvas.height = videoElement.videoHeight;
-                ctx.drawImage(videoElement, 0, 0);
+                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                 
                 canvas.toBlob(async (blob) => {
                     if (!blob) return;
@@ -750,15 +762,31 @@
             const canvas = canvasElement;
             const ctx = canvas.getContext('2d');
             
-            // Clear canvas and draw video frame
-            canvas.width = videoElement.videoWidth;
-            canvas.height = videoElement.videoHeight;
+            // Get container dimensions
+            const container = canvas.parentElement;
+            const containerRect = container.getBoundingClientRect();
+            
+            // Set canvas to container size for display
+            canvas.width = containerRect.width;
+            canvas.height = containerRect.height;
+            
+            // Draw video frame scaled to fit container
             ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+            
+            // Calculate scaling factors
+            const scaleX = canvas.width / videoElement.videoWidth;
+            const scaleY = canvas.height / videoElement.videoHeight;
             
             // Draw bounding boxes
             detections.forEach((det, index) => {
                 if (det.bbox && det.bbox.length >= 4) {
                     const [x1, y1, x2, y2] = det.bbox;
+                    
+                    // Scale bounding box coordinates to match display canvas
+                    const scaledX1 = x1 * scaleX;
+                    const scaledY1 = y1 * scaleY;
+                    const scaledX2 = x2 * scaleX;
+                    const scaledY2 = y2 * scaleY;
                     
                     // Generate color based on class name
                     const color = generateColor(det.label);
@@ -768,20 +796,21 @@
                     ctx.lineWidth = 3;
                     ctx.shadowColor = color;
                     ctx.shadowBlur = 10;
-                    ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                    ctx.strokeRect(scaledX1, scaledY1, scaledX2 - scaledX1, scaledY2 - scaledY1);
                     
                     // Reset shadow
                     ctx.shadowBlur = 0;
                     
                     // Draw label background
                     const label = `${det.label} ${(det.confidence * 100).toFixed(1)}%`;
+                    ctx.font = '14px Arial';
                     const textMetrics = ctx.measureText(label);
                     const textWidth = textMetrics.width;
                     const textHeight = 20;
                     
                     // Rounded rectangle for label background
-                    const labelX = x1;
-                    const labelY = y1 - textHeight - 5;
+                    const labelX = scaledX1;
+                    const labelY = scaledY1 - textHeight - 5;
                     
                     ctx.fillStyle = color;
                     ctx.fillRect(labelX, labelY, textWidth + 10, textHeight);
